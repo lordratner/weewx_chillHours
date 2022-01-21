@@ -72,7 +72,7 @@ class ChillHours(weewx.xtypes.XType):
         # Get the first element of the ValueTuple. This will be in Celsius:
         outTemp_F = outTemp_F_vt[0]
         interval_H = interval_H_vt[0]
-
+        log.debug("Chill Hours Algorithm: %s", self.algorithm)
         if self.algorithm == 'simple':
             # Use the "Simple" algorithm. Results will be in hours. Create a ValueTuple out of it:
             if outTemp_F < 45:
@@ -80,7 +80,7 @@ class ChillHours(weewx.xtypes.XType):
             else:
                 chill_time = 0
             chill_vt = ValueTuple(chill_time, 'hour', 'group_elapsed')
-            log.debug("Found chill hours of %s hours", chill_time)
+            log.debug("Found Simple chill hours of %s hours", chill_time)
         elif self.algorithm == 'utah':
             # Use the "Modified" algorithm, weighting chill temps between 32 and 45F
             if outTemp_F <= 34:
@@ -98,7 +98,7 @@ class ChillHours(weewx.xtypes.XType):
             elif 65 < outTemp_F:
                 chill_time = interval_H * -1
             chill_vt = ValueTuple(chill_time, 'hour', 'group_elapsed')
-            log.debug("Found chill hours of %s hours", chill_time)
+            log.debug("Found Utah chill hours of %s hours", chill_time)
         elif self.algorithm == 'modified':
             # Use the "Modified" algorithm, counting only chill temps between 32 and 45F
             if outTemp_F < 45 and 32 < outTemp_F:
@@ -106,14 +106,13 @@ class ChillHours(weewx.xtypes.XType):
             else:
                 chill_time = 0
             chill_vt = ValueTuple(chill_time, 'hour', 'group_elapsed')
-            log.debug("Found chill hours of %s hours", chill_time)
+            log.debug("Found Modified chill hours of %s hours", chill_time)
         else:
             # Don't recognize the exception. Fail hard:
             raise ValueError(self.algorithm)
 
         # We have the chill hours as a ValueTuple. Convert it back to the units used by
         # the incoming record and return it
-        log.debug("Returning chillHours tuple: ", print(chill_vt))
         return weewx.units.convertStd(chill_vt, record['usUnits'])
         
 
