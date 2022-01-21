@@ -32,6 +32,10 @@ import weewx.xtypes
 from weewx.engine import StdService
 from weewx.units import ValueTuple
 import logging
+
+# Tell the unit system what group our new observation type, 'chillHours', belongs to:
+weewx.units.obs_group_dict['chillHours'] = "group_elapsed"
+
 log = logging.getLogger(__name__)
 
 
@@ -136,7 +140,3 @@ class ChillHoursService(StdService):
     def shutDown(self):
         # Remove the registered instance:
         weewx.xtypes.xtypes.remove(self.ch)
-
-
-# Tell the unit system what group our new observation type, 'chillHours', belongs to:
-weewx.units.obs_group_dict['chillHours'] = "group_elapsed"
