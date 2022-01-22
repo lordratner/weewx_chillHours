@@ -112,7 +112,7 @@ class ChillTime(weewx.xtypes.XType):
             raise ValueError("Unrecognized chill time algorithm '%s'" % self.algorithm)
 
         # Form a ValueTuple out of our results and return it
-        chill_vt = ValueTuple(chill_time, 'hour', 'group_elapsed')
+        chill_vt = ValueTuple(chill_time, 'hour', 'group_duration')
 
         return chill_vt
 
