@@ -56,7 +56,8 @@ class ChillTime(weewx.xtypes.XType):
 
         # We need outTemp and interval in order to do the calculation.
         if record.get('outTemp') is None or record.get('interval') is None:
-
+            raise weewx.CannotCalculate(obs_type)
+            
         # We have everything we need. Start by forming a ValueTuple for the outside temperature and archive interval.
         # To do this, figure out what unit and group the outTemp record is in
         unit_and_group = weewx.units.getStandardUnitType(record['usUnits'], 'outTemp')
@@ -139,11 +140,12 @@ class ChillTime(weewx.xtypes.XType):
 
         chill_total = 0
 
-        for record in db_manager.getBatchRecords(*timespan):
-            chill_delta = self.get_scalar('chillTime', record, db_manager)
+        for record in db_manager.genBatchRecords(*timespan):
+            chill_delta_vt = self.get_scalar('chillTime', record, db_manager)
+            chill_delta = chill_delta_vt[0]
             chill_total += chill_delta
 
-        chill_vt = ValueTuple(chill_total, 'hour', 'group_elapsed')
+        chill_vt = ValueTuple(chill_total, 'hour', 'group_duration')
 
         return chill_vt
 
