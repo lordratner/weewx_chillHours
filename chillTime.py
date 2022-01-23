@@ -17,11 +17,17 @@ To use:
             [[Services]]
                 xtype_services = weewx.wxxtypes.StdWXXTypes, weewx.wxxtypes.StdPressureCooker, weewx.wxxtypes.StdRainRater, user.chillTime.ChillTimeService
 
-    4. Optionally, add the following section to weewx.conf:
+    4. Add the following section to weewx.conf:
         [ChillTime]
             algorithm = simple   # Or utah, or modified
+    
+    5. Optionally, add 
+    
+            chillTime = software
+            
+        to [StdWXCalculate] [[Calculations]] in weewx.conf
 
-    5. Restart weewxd
+    6. Restart weewxd
 
 """
 
@@ -61,8 +67,10 @@ class ChillTime(weewx.xtypes.XType):
         # We have everything we need. Start by forming a ValueTuple for the outside temperature and archive interval.
         # To do this, figure out what unit and group the outTemp record is in
         unit_and_group = weewx.units.getStandardUnitType(record['usUnits'], 'outTemp')
+        
         # ... then form the ValueTuple.
         outTemp_vt = ValueTuple(record['outTemp'], *unit_and_group)
+        
         # Now do it for the interval
         unit_and_group = weewx.units.getStandardUnitType(record['usUnits'], 'interval')
         interval_vt = ValueTuple(record['interval'], *unit_and_group)
@@ -71,6 +79,7 @@ class ChillTime(weewx.xtypes.XType):
         # is in that unit. Use function convert(). The results will be in the form of a ValueTuple
         outTemp_F_vt = weewx.units.convert(outTemp_vt, 'degree_F')
         interval_H_vt = weewx.units.convert(interval_vt, 'hour')
+        
         # Get the first element of the ValueTuple. This will be in Celsius:
         outTemp_F = outTemp_F_vt[0]
         interval_H = interval_H_vt[0]
@@ -81,9 +90,9 @@ class ChillTime(weewx.xtypes.XType):
                 chill_time = interval_H
             else:
                 chill_time = 0
-            log.debug("Found Simple chill hours of %s hours", chill_time)
+            log.debug("Scalar: Simple chill hours: %s", chill_time)
         elif self.algorithm == 'utah':
-            # Use the "Utah" algorithm, weighting chill temps between 32 and 45F
+            # Use the "Utah" algorithm, weighting chill temps between 32F and 65F+
             if outTemp_F <= 34:
                 chill_time = 0
             elif 34 < outTemp_F <= 36:
@@ -100,14 +109,14 @@ class ChillTime(weewx.xtypes.XType):
                 chill_time = interval_H * -1
             else:
                 chill_time = 0
-            log.debug("Found Utah chill hours of %s hours", chill_time)
+            log.debug("Scalar: Utah chill hours: %s", chill_time))
         elif self.algorithm == 'modified':
             # Use the "Modified" algorithm, counting only chill temps between 32 and 45F
             if 32 < outTemp_F < 45:
                 chill_time = interval_H
             else:
                 chill_time = 0
-            log.debug("Found Modified chill hours of %s hours", chill_time)
+            log.debug("Scalar: Modified chill hours: %s", chill_time)
         else:
             # Don't recognize the algorithm type. Fail hard:
             raise ValueError("Unrecognized chill time algorithm '%s'" % self.algorithm)
@@ -124,27 +133,14 @@ class ChillTime(weewx.xtypes.XType):
         if aggregate_type != 'sum':
             raise weewx.UnknownAggregation(aggregate_type)
 
-        ###*** Needs to be moved to after the sql call, not sure how to make it exit the 'for' loop
-        '''
-        if 'outTemp' not in record or record['outTemp'] is None:
-            raise weewx.CannotCalculate(obs_type)
-        if 'interval' not in record or record['interval'] is None:
-            raise weewx.CannotCalculate(obs_type)
-        '''
-
-        interp_dict = {
-            'table': db_manager.table_name,
-            'start': timespan.start,
-            'stop': timespan.stop
-        }
-
         chill_total = 0
 
         for record in db_manager.genBatchRecords(*timespan):
             chill_delta_vt = self.get_scalar('chillTime', record, db_manager)
             chill_delta = chill_delta_vt[0]
             chill_total += chill_delta
-
+            
+        log.debug("Aggregate chill hours: %s", chill_total)
         chill_vt = ValueTuple(chill_total, 'hour', 'group_duration')
 
         return chill_vt
