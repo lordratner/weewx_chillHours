@@ -109,7 +109,7 @@ class ChillTime(weewx.xtypes.XType):
                 chill_time = interval_H * -1
             else:
                 chill_time = 0
-            log.debug("Scalar: Utah chill hours: %s", chill_time))
+            log.debug("Scalar: Utah chill hours: %s", chill_time)
         elif self.algorithm == 'modified':
             # Use the "Modified" algorithm, counting only chill temps between 32 and 45F
             if 32 < outTemp_F < 45:
